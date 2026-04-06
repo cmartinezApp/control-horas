@@ -23,7 +23,7 @@ app.use(bodyParser.json());
 app.use(cookieParser());
 
 // Rutas de la API
-app.use('/api', routes);
+app.use('/api', authenticateToken, routes);
 
 // Middleware para verificar el token JWT
 function authenticateToken(req, res, next) {

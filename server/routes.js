@@ -92,7 +92,7 @@ router.post('/login', async (req, res) => {
     // Establecer cookie HTTP-only
     res.cookie('authToken', token, {
       httpOnly: true,
-      secure: false, // Cambiar a true en producción con HTTPS
+      secure: true, // Cambiar a true en producción con HTTPS
       sameSite: 'strict',
       maxAge: 3600000 // 1 hora en milisegundos
     });
@@ -104,6 +104,7 @@ router.post('/login', async (req, res) => {
 // Cerrar sesión
 router.post('/logout', (req, res) => {
   // La cookie se limpia en el cliente/navegador al redirigir
+  res.clearCookie('authToken');
   res.json({ message: 'Sesión cerrada' });
 });
 
@@ -118,7 +119,7 @@ router.get('/me', authenticateToken, (req, res) => {
 });
 
 // Obtener todas las empresas
-router.get('/empresas', (req, res) => {
+router.get('/empresas', authenticateToken, (req, res) => {
   db.all('SELECT * FROM empresas', (err, rows) => {
     if (err) {
       return res.status(500).json({ error: err.message });
@@ -128,7 +129,7 @@ router.get('/empresas', (req, res) => {
 });
 
 // Ruta para obtener las horas libres actuales
-router.get('/horas-libres/:empresa_id', (req, res) => {
+router.get('/horas-libres/:empresa_id', authenticateToken, (req, res) => {
   const { empresa_id } = req.params;
   db.get('SELECT horas_libres FROM empresas WHERE id = ?', [empresa_id], (err, row) => {
     if (err) {
@@ -142,7 +143,7 @@ router.get('/horas-libres/:empresa_id', (req, res) => {
 });
 
 // Obtener todas las entradas de horas
-router.get('/horas', (req, res) => {
+router.get('/horas', authenticateToken, (req, res) => {
   const { empresa_id } = req.query;
   let query = 'SELECT * FROM horas';
   let params = [];
@@ -159,7 +160,7 @@ router.get('/horas', (req, res) => {
 });
 
 // Ruta para agregar una nueva entrada de horas
-router.post('/horas', (req, res) => {
+router.post('/horas', authenticateToken, (req, res) => {
   let { fecha, horas_usadas, solicitante, tarea, empresa_id } = req.body;
   // Convertir horas_usadas a número
   horas_usadas = Number(horas_usadas);
