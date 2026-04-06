@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visualización - Control de Horas</title>
+  <link rel="stylesheet" href="css/view-styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <h1>Sistema de Gestión de Horas</h1>
+  </header>
+  
+  <!--Contenido Principal-->
+  <div class="container">
+    <h1>Visualización - Control de Horas</h1>
+    <div id="header">
+      <label for="mes">Filtrar por mes:</label>
+      <select id="mes">
+        <option value="01">Enero</option>
+        <option value="02">Febrero</option>
+        <option value="03">Marzo</option>
+        <option value="04">Abril</option>
+        <option value="05">Mayo</option>
+        <option value="06">Junio</option>
+        <option value="07">Julio</option>
+        <option value="08">Agosto</option>
+        <option value="09">Septiembre</option>
+        <option value="10">Octubre</option>
+        <option value="11">Noviembre</option>
+        <option value="12">Diciembre</option>
+      </select>
+
+      <label for="anio">Filtrar por año:</label>
+      <select id="anio"></select>
+
+      <button id="filtrar">Filtrar</button>
+    </div>
+    <div>
+      <p>Minutos Libres actuales: <span id="horas-libres"></span></p>
+    </div>
+    <div id="horas-container">
+      <table id="horas-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Minutos Usados</th>
+            <th>Minutos Libres</th>
+            <th>Solicitante</th>
+            <th>Tarea</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Las filas se llenarán con JavaScript -->
+        </tbody>
+      </table>
+    </div>
+    <div class="chart-container">
+      <canvas id="horasChart"></canvas>
+    </div>
+  </div>
+  
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>© 2025 CM IT Consulting - Carlos Martinez</p>
+    <p>Contacto: <a href="mailto:cm.it-consulting@outlook.com">cm.it-consulting@outlook.com</a> | Whatsapp: <a href="https://api.whatsapp.com/send?phone=543624604122&text=Hola!%20Quiero%20saber%20sobre%20tus%20servicios.">3624604122</a></p>
+    <p><a href="#" class="footer-link">Política de Privacidad</a> | <a href="#" class="footer-link">Acerca de</a></p>
+  </footer>
+
+  <script src="js/view.js"></script>
+</body>
+</html>

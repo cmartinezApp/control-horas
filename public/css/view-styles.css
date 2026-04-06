@@ -1,0 +1,191 @@
+/* General styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  overflow-x: hidden; /* Evita desplazamiento horizontal innecesario */
+  high: auto;
+}
+
+body {
+  font-family: 'Arial', sans-serif;
+  background-color: #f4f7fa;
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  flex-direction: column;
+  padding: 0;
+  overflow-y: auto;  /* Permite desplazamiento vertical cuando el contenido sea más grande que la pantalla */
+  padding-bottom: 0;
+}
+
+h1 {
+  text-align: center;
+  font-size: 2rem;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+p {
+  font-size: 1rem;
+  color: #333;
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+/* Container for the content */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  overflow: hidden; /* Evita que el contenido se desborde fuera de la pantalla */
+}
+
+#horas-container {
+  width: 100%;
+  margin-bottom: 40px;
+}
+
+#horas-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 30px;
+  background-color: white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+#horas-table th, #horas-table td {
+  padding: 12px;
+  text-align: left;
+  border: 1px solid #ddd;
+}
+
+#horas-table th {
+  background-color: #4CAF50;
+  color: white;
+  font-size: 1rem;
+}
+
+#horas-table td {
+  font-size: 0.9rem;
+  color: #333;
+}
+
+#horas-table tr:hover {
+  background-color: #f1f1f1;
+}
+
+#horas-table tbody tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+/* Chart container */
+.chart-container {
+  margin-top: 40px;
+  text-align: center;
+  width: 100%;
+}
+
+canvas {
+  width: 100% !important;
+  max-width: 900px; /* Controlamos el tamaño del gráfico */
+  height: auto;
+  margin: 0 auto;
+}
+
+/* Estilos para el selector de mes y el botón */
+#mes, #filtrar {
+  padding: 8px;
+  margin: 5px;
+  font-size: 16px;
+}
+
+#filtrar {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+#filtrar:hover {
+  background-color: #45a049;
+}
+
+/* Estilos del header */
+.site-header {
+  background-color: #4CAF50;
+  color: white;
+  text-align: center;
+  padding: 20px 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.site-header h1 {
+  font-size: 2.5rem;
+  margin: 0;
+  transition: font-size 0.3s ease;
+}
+
+.site-header:hover h1 {
+  font-size: 2.8rem;  /* Efecto al pasar el mouse */
+}
+
+/* Estilos del footer */
+.site-footer {
+  background-color: #333;
+  color: white;
+  text-align: left;
+  padding: 20px 10px;
+  position: relative;
+  width: 100%;
+  font-size: 0.9rem;
+  margin: 0;
+  align-items: flex-start;
+}
+
+.site-footer a {
+  text-align: right;
+  color: #4CAF50;
+  text-decoration: none;
+}
+
+.site-footer a:hover {
+  text-decoration: underline;
+}
+
+.site-footer p {
+  text-align: right;
+  margin-bottom: 5px;
+  color: white;
+}
+
+.site-footer .footer-link {
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+/* Responsive design for mobile */
+@media (max-width: 768px) {
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  #horas-table th, #horas-table td {
+    padding: 10px;
+  }
+
+  .chart-container {
+    margin-top: 20px;
+  }
+
+  #horas-table {
+    font-size: 0.85rem;
+  }
+}
+

@@ -1,0 +1,29 @@
+services:
+  control-horas:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: control-horas-app
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - SECRET_KEY=${SECRET_KEY:-SecretKey}
+      - CLAVE_MAESTRA=${CLAVE_MAESTRA:-Crear Clave}
+    volumes:
+      - ./server/database.db:/app/server/database.db
+      - ./server/.env:/app/server/.env:ro
+      - ./public:/app/public:ro
+    restart: unless-stopped
+    networks:
+      - control-horas-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  control-horas-network:
+    driver: bridge
