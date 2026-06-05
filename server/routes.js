@@ -86,7 +86,7 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign(
       { id: user.id, username: user.username, empresa_id: user.empresa_id, is_admin: user.is_admin === 1 },
       SECRET_KEY,
-      { expiresIn: '1h' }
+      { expiresIn: '12h' }
     );
 
     // Establecer cookie HTTP-only
@@ -94,7 +94,7 @@ router.post('/login', async (req, res) => {
       httpOnly: true,
       secure: true, // Cambiar a true en producción con HTTPS
       sameSite: 'strict',
-      maxAge: 3600000 // 1 hora en milisegundos
+      maxAge: 12 * 60 * 60 * 1000 // 12 horas en milisegundos
     });
 
     res.json({ token, is_admin: user.is_admin === 1 });
