@@ -41,6 +41,20 @@ db.serialize(() => {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS usuario_empresas (
+      usuario_id INTEGER NOT NULL,
+      empresa_id INTEGER NOT NULL,
+      PRIMARY KEY (usuario_id, empresa_id),
+      FOREIGN KEY (usuario_id) REFERENCES usuarios (id),
+      FOREIGN KEY (empresa_id) REFERENCES empresas (id)
+    )
+  `);
+  db.run(`
+    INSERT OR IGNORE INTO usuario_empresas (usuario_id, empresa_id)
+    SELECT id, empresa_id FROM usuarios
+  `);
+
   // Insertar empresas por defecto si no existen
   db.run(`INSERT OR IGNORE INTO empresas (nombre, horas_totales, horas_libres) VALUES ('Meucci Calidad', 720, 720)`);
   db.run(`INSERT OR IGNORE INTO empresas (nombre, horas_totales, horas_libres) VALUES ('Meucci Reporteria', 480, 480)`);

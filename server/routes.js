@@ -42,30 +42,200 @@ function authorizeAdmin(req, res, next) {
 }
 
 // Registrar un nuevo usuario
-router.post('/register', async (req, res) => {
-  const { username, password, clave_maestra, empresa_id, is_admin = false } = req.body;
+router.post('/register', authenticateToken, authorizeAdmin, async (req, res) => {
+  const username = typeof req.body.username === 'string' ? req.body.username.trim() : '';
+  const password = req.body.password;
+  const { clave_maestra } = req.body;
+  const empresaIds = Array.isArray(req.body.empresa_ids)
+    ? [...new Set(req.body.empresa_ids.map(Number))]
+    : [Number(req.body.empresa_id)];
   if (clave_maestra !== CLAVE_MAESTRA) {
     return res.status(403).json({ error: 'Clave maestra incorrecta' });
   }
 
-  // Validar que se proporcionen username, password y empresa_id
-  if (!username || !password || !empresa_id) {
-    return res.status(400).json({ error: 'Username, password y empresa_id son obligatorios' });
+  if (!username || typeof password !== 'string' || password.length === 0 || empresaIds.length === 0 ||
+      empresaIds.some(id => !Number.isInteger(id) || id < 1)) {
+    return res.status(400).json({ error: 'Usuario, contraseña y al menos una empresa son obligatorios' });
   }
 
-  // Hashear la contraseña
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  db.run(
-    'INSERT INTO usuarios (username, password, empresa_id, is_admin) VALUES (?, ?, ?, ?)',
-    [username, hashedPassword, empresa_id, is_admin ? 1 : 0],
-    function (err) {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-      res.json({ id: this.lastID });
+  const empresaPlaceholders = empresaIds.map(() => '?').join(', ');
+  db.all(`SELECT id FROM empresas WHERE id IN (${empresaPlaceholders})`, empresaIds, async (err, empresas) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (empresas.length !== empresaIds.length) {
+      return res.status(400).json({ error: 'Una o más empresas no existen' });
     }
-  );
+
+    try {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      db.run(
+        'INSERT INTO usuarios (username, password, empresa_id, is_admin) VALUES (?, ?, ?, 0)',
+        [username, hashedPassword, empresaIds[0]],
+        function (insertError) {
+          if (insertError) {
+            const status = insertError.code === 'SQLITE_CONSTRAINT' ? 409 : 500;
+            const message = status === 409 ? 'Ese nombre de usuario ya está en uso' : insertError.message;
+            return res.status(status).json({ error: message });
+          }
+
+          const usuarioId = this.lastID;
+          const values = empresaIds.map(() => '(?, ?)').join(', ');
+          const params = empresaIds.flatMap(empresaId => [usuarioId, empresaId]);
+          db.run(
+            `INSERT INTO usuario_empresas (usuario_id, empresa_id) VALUES ${values}`,
+            params,
+            function (assignmentError) {
+              if (assignmentError) {
+                db.run('DELETE FROM usuario_empresas WHERE usuario_id = ?', [usuarioId]);
+                db.run('DELETE FROM usuarios WHERE id = ?', [usuarioId]);
+                return res.status(500).json({ error: assignmentError.message });
+              }
+              res.json({ id: usuarioId });
+            }
+          );
+        }
+      );
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+});
+
+// Obtener los usuarios y sus empresas asignadas (solo administradores)
+router.get('/usuarios', authenticateToken, authorizeAdmin, (req, res) => {
+  db.all(`
+    SELECT u.id, u.username, ue.empresa_id
+    FROM usuarios u
+    LEFT JOIN usuario_empresas ue ON ue.usuario_id = u.id
+    ORDER BY u.username
+  `, (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+
+    const usuarios = new Map();
+    rows.forEach(row => {
+      if (!usuarios.has(row.id)) {
+        usuarios.set(row.id, { id: row.id, username: row.username, empresa_ids: [] });
+      }
+      if (row.empresa_id !== null) usuarios.get(row.id).empresa_ids.push(row.empresa_id);
+    });
+    res.json(Array.from(usuarios.values()));
+  });
+});
+
+// Actualizar las empresas visibles para un usuario (solo administradores)
+router.put('/usuarios/:id/empresas', authenticateToken, authorizeAdmin, (req, res) => {
+  const usuarioId = Number(req.params.id);
+  const empresaIds = Array.isArray(req.body.empresa_ids)
+    ? [...new Set(req.body.empresa_ids.map(Number))]
+    : [];
+  if (!Number.isInteger(usuarioId) || usuarioId < 1 ||
+      empresaIds.length === 0 ||
+      empresaIds.some(id => !Number.isInteger(id) || id < 1)) {
+    return res.status(400).json({ error: 'Usuario y al menos una empresa válida son obligatorios' });
+  }
+
+  const empresaPlaceholders = empresaIds.map(() => '?').join(', ');
+  db.get('SELECT id FROM usuarios WHERE id = ?', [usuarioId], (userError, user) => {
+    if (userError) return res.status(500).json({ error: userError.message });
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    db.all(`SELECT id FROM empresas WHERE id IN (${empresaPlaceholders})`, empresaIds, (companyError, empresas) => {
+      if (companyError) return res.status(500).json({ error: companyError.message });
+      if (empresas.length !== empresaIds.length) {
+        return res.status(400).json({ error: 'Una o más empresas no existen' });
+      }
+
+      db.run('DELETE FROM usuario_empresas WHERE usuario_id = ?', [usuarioId], deleteError => {
+        if (deleteError) return res.status(500).json({ error: deleteError.message });
+        const values = empresaIds.map(() => '(?, ?)').join(', ');
+        const params = empresaIds.flatMap(empresaId => [usuarioId, empresaId]);
+        db.run(`INSERT INTO usuario_empresas (usuario_id, empresa_id) VALUES ${values}`, params, insertError => {
+          if (insertError) return res.status(500).json({ error: insertError.message });
+          db.run('UPDATE usuarios SET empresa_id = ? WHERE id = ?', [empresaIds[0], usuarioId], updateError => {
+            if (updateError) return res.status(500).json({ error: updateError.message });
+            res.json({ message: 'Empresas actualizadas' });
+          });
+        });
+      });
+    });
+  });
+});
+
+// Actualizar una cuenta existente (solo administradores)
+router.put('/usuarios/:id', authenticateToken, authorizeAdmin, async (req, res) => {
+  const usuarioId = Number(req.params.id);
+  const username = typeof req.body.username === 'string' ? req.body.username.trim() : '';
+  const password = req.body.password;
+  const empresaIds = Array.isArray(req.body.empresa_ids)
+    ? [...new Set(req.body.empresa_ids.map(Number))]
+    : [];
+
+  if (!Number.isInteger(usuarioId) || usuarioId < 1 ||
+      !username ||
+      (password !== undefined && typeof password !== 'string') ||
+      empresaIds.length === 0 ||
+      empresaIds.some(id => !Number.isInteger(id) || id < 1)) {
+    return res.status(400).json({ error: 'Usuario y al menos una empresa válida son obligatorios' });
+  }
+
+  try {
+    const hashedPassword = password ? await bcrypt.hash(password, 10) : null;
+    const empresaPlaceholders = empresaIds.map(() => '?').join(', ');
+
+    db.get('SELECT id FROM usuarios WHERE id = ?', [usuarioId], (userError, user) => {
+      if (userError) return res.status(500).json({ error: userError.message });
+      if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+      db.get('SELECT id FROM usuarios WHERE username = ? AND id != ?', [username, usuarioId], (nameError, duplicate) => {
+        if (nameError) return res.status(500).json({ error: nameError.message });
+        if (duplicate) return res.status(409).json({ error: 'Ese nombre de usuario ya está en uso' });
+
+        db.all(`SELECT id FROM empresas WHERE id IN (${empresaPlaceholders})`, empresaIds, (companyError, empresas) => {
+          if (companyError) return res.status(500).json({ error: companyError.message });
+          if (empresas.length !== empresaIds.length) {
+            return res.status(400).json({ error: 'Una o más empresas no existen' });
+          }
+
+          db.serialize(() => {
+            db.run('BEGIN IMMEDIATE', beginError => {
+              if (beginError) return res.status(500).json({ error: beginError.message });
+              const rollback = error => {
+                db.run('ROLLBACK', rollbackError => {
+                  res.status(500).json({ error: rollbackError ? rollbackError.message : error.message });
+                });
+              };
+
+              db.run(
+                'UPDATE usuarios SET username = ?, password = COALESCE(?, password), empresa_id = ? WHERE id = ?',
+                [username, hashedPassword, empresaIds[0], usuarioId],
+                updateError => {
+                  if (updateError) return rollback(updateError);
+                  db.run('DELETE FROM usuario_empresas WHERE usuario_id = ?', [usuarioId], deleteError => {
+                    if (deleteError) return rollback(deleteError);
+
+                    const values = empresaIds.map(() => '(?, ?)').join(', ');
+                    const params = empresaIds.flatMap(empresaId => [usuarioId, empresaId]);
+                    db.run(
+                      `INSERT INTO usuario_empresas (usuario_id, empresa_id) VALUES ${values}`,
+                      params,
+                      insertError => {
+                        if (insertError) return rollback(insertError);
+                        db.run('COMMIT', commitError => {
+                          if (commitError) return rollback(commitError);
+                          res.json({ message: 'Usuario actualizado correctamente' });
+                        });
+                      }
+                    );
+                  });
+                }
+              );
+            });
+          });
+        });
+      });
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Iniciar sesión
@@ -110,17 +280,28 @@ router.post('/logout', (req, res) => {
 
 // Obtener la información del usuario autenticado
 router.get('/me', authenticateToken, (req, res) => {
-  res.json({
-    id: req.user.id,
-    username: req.user.username,
-    empresa_id: req.user.empresa_id,
-    is_admin: req.user.is_admin
+  db.all('SELECT empresa_id FROM usuario_empresas WHERE usuario_id = ?', [req.user.id], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    const empresaIds = rows.map(row => row.empresa_id);
+    res.json({
+      id: req.user.id,
+      username: req.user.username,
+      empresa_id: empresaIds[0] || req.user.empresa_id,
+      empresa_ids: empresaIds.length ? empresaIds : [req.user.empresa_id],
+      is_admin: req.user.is_admin
+    });
   });
 });
 
 // Obtener todas las empresas
 router.get('/empresas', authenticateToken, (req, res) => {
-  db.all('SELECT * FROM empresas', (err, rows) => {
+  const query = req.user.is_admin
+    ? 'SELECT * FROM empresas'
+    : `SELECT e.* FROM empresas e
+       JOIN usuario_empresas ue ON ue.empresa_id = e.id
+       WHERE ue.usuario_id = ?`;
+  const params = req.user.is_admin ? [] : [req.user.id];
+  db.all(query, params, (err, rows) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
@@ -131,7 +312,13 @@ router.get('/empresas', authenticateToken, (req, res) => {
 // Ruta para obtener las horas libres actuales
 router.get('/horas-libres/:empresa_id', authenticateToken, (req, res) => {
   const { empresa_id } = req.params;
-  db.get('SELECT horas_libres FROM empresas WHERE id = ?', [empresa_id], (err, row) => {
+  const query = req.user.is_admin
+    ? 'SELECT horas_libres FROM empresas WHERE id = ?'
+    : `SELECT e.horas_libres FROM empresas e
+       JOIN usuario_empresas ue ON ue.empresa_id = e.id
+       WHERE e.id = ? AND ue.usuario_id = ?`;
+  const params = req.user.is_admin ? [empresa_id] : [empresa_id, req.user.id];
+  db.get(query, params, (err, row) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
@@ -151,6 +338,11 @@ router.get('/horas', authenticateToken, (req, res) => {
     query += ' WHERE empresa_id = ?';
     params.push(empresa_id);
   }
+  if (!req.user.is_admin) {
+    query += empresa_id ? ' AND' : ' WHERE';
+    query += ' empresa_id IN (SELECT empresa_id FROM usuario_empresas WHERE usuario_id = ?)';
+    params.push(req.user.id);
+  }
   db.all(query, params, (err, rows) => {
     if (err) {
       return res.status(500).json({ error: err.message });
@@ -169,8 +361,17 @@ router.post('/horas', authenticateToken, (req, res) => {
     return res.status(400).json({ error: 'Horas usadas inválidas' });
   }
 
-  db.get('SELECT horas_libres FROM empresas WHERE id = ?', [empresa_id], (err, empresa) => {
-    if (err || !empresa) {
+  const query = req.user.is_admin
+    ? 'SELECT horas_libres FROM empresas WHERE id = ?'
+    : `SELECT e.horas_libres FROM empresas e
+       JOIN usuario_empresas ue ON ue.empresa_id = e.id
+       WHERE e.id = ? AND ue.usuario_id = ?`;
+  const params = req.user.is_admin ? [empresa_id] : [empresa_id, req.user.id];
+  db.get(query, params, (err, empresa) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    if (!empresa) {
       return res.status(404).json({ error: 'Empresa no encontrada' });
     }
 
@@ -202,27 +403,25 @@ router.post('/horas', authenticateToken, (req, res) => {
 // Ruta para obtener horas por mes y años (formato: dos dígitos, ej: "01")
 router.get('/horas/:anio/:mes', authenticateToken, (req, res) => {
   const { anio, mes } = req.params;
-  let { empresa_id } = req.query;
+  const { empresa_id } = req.query;
   const user = req.user; // JWT decodificado
 
   // Validaciones básicas
   if (!/^\d{4}$/.test(anio)) return res.status(400).json({ error: 'Formato de año inválido' });
   if (!/^\d{2}$/.test(mes)) return res.status(400).json({ error: 'Formato de mes inválido' });
 
-  let query = `SELECT * FROM horas WHERE strftime('%Y', fecha) = ? AND strftime('%m', fecha) = ?`;
+  let query = `SELECT h.*, e.nombre AS empresa_nombre
+    FROM horas h JOIN empresas e ON e.id = h.empresa_id
+    WHERE strftime('%Y', h.fecha) = ? AND strftime('%m', h.fecha) = ?`;
   let params = [anio, mes];
 
-  // Si no es admin, siempre filtramos por su empresa
   if (!user.is_admin) {
-    query += ' AND empresa_id = ?';
-    params.push(user.empresa_id);
-  } else {
-    // Si es admin y empresa_id se pasó en query, filtramos solo esa empresa
-    if (empresa_id && empresa_id != 0) {
-      query += ' AND empresa_id = ?';
-      params.push(empresa_id);
-    }
-    // Si es admin y empresa_id no se pasa o es 0 → devolvemos todas las empresas
+    query += ' AND h.empresa_id IN (SELECT empresa_id FROM usuario_empresas WHERE usuario_id = ?)';
+    params.push(user.id);
+  }
+  if (empresa_id && empresa_id !== '0') {
+    query += ' AND h.empresa_id = ?';
+    params.push(empresa_id);
   }
 
   db.all(query, params, (err, rows) => {

@@ -52,13 +52,13 @@ h1 {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   padding: 30px;
   width: 100%;
-  max-width: 350px;
+  max-width: 500px;
   text-align: center;
   margin: 40px auto;
 }
 
 /* Estilo para los inputs y el botón */
-input, button {
+input, select, button {
   width: 100%;
   padding: 10px;
   margin: 10px 0;
@@ -67,7 +67,40 @@ input, button {
   font-size: 1rem;
 }
 
-input:focus, button:focus {
+select[multiple] {
+  min-height: 120px;
+}
+
+#usuario {
+  display: block;
+  width: min(500px, calc(100% - 60px));
+  margin: 0 auto;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
+#register-form label,
+#register-form small {
+  display: block;
+  text-align: left;
+  margin-top: 10px;
+}
+
+#register-form small {
+  color: #555;
+}
+
+#clave-maestra-container {
+  width: 100%;
+}
+
+#clave-maestra-container[hidden] {
+  display: none;
+}
+
+input:focus, select:focus, button:focus {
   outline: none;
   border-color: #4CAF50;
 }

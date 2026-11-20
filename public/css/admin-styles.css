@@ -6,19 +6,15 @@
 }
 
 html {
-height: 100%;
+  min-height: 100%;
 }
 
 body {
   font-family: 'Arial', sans-serif;
   background-color: #f4f7fa;
   display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
   flex-direction: column;
-  padding: 0px;
-  height: 100%;
+  min-height: 100vh;
 }
 
 h1 {
@@ -36,8 +32,11 @@ p {
 }
 
 .body-container {
-  heigth: 81%;
-  padding: 3.2%;
+  display: flex;
+  flex: 1 0 auto;
+  justify-content: center;
+  align-items: center;
+  padding: 24px 16px;
 }
 
 /* Container for the content */
@@ -51,14 +50,23 @@ p {
   text-align: center;
 }
 
+.admin-container > h1 {
+  font-size: 1.75rem;
+  margin-bottom: 12px;
+}
+
+.admin-container > p {
+  margin-bottom: 16px;
+}
+
 /* Form styles */
 #horas-form {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 12px;
 }
 
-input, button {
+input, select, button {
   padding: 10px;
   margin: 10px 0;
   border: 1px solid #ccc;
@@ -66,7 +74,15 @@ input, button {
   font-size: 1rem;
 }
 
-input:focus, button:focus {
+#horas-form input,
+#horas-form select,
+#horas-form button {
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+}
+
+input:focus, select:focus, button:focus {
   outline: none;
   border-color: #4CAF50;
 }
@@ -94,7 +110,7 @@ button:hover {
   font-size: 1rem;
   border-radius: 5px;
   border: none;
-  margin-top: 20px;
+  margin-top: 14px;
   transition: background-color 0.3s;
 }
 
@@ -111,7 +127,7 @@ button:hover {
   font-size: 1rem;
   border-radius: 5px;
   border: none;
-  margin-top: 20px;
+  margin-top: 14px;
   transition: background-color 0.3s;
 }
 
@@ -122,7 +138,7 @@ button:hover {
 /* Link styles */
 .view-link {
   display: block;
-  margin-top: 20px;
+  margin-top: 14px;
   color: #4CAF50;
   text-decoration: none;
   font-size: 1rem;
@@ -137,11 +153,10 @@ button:hover {
   background-color: #4CAF50;
   color: white;
   text-align: center;
-  padding: 20px 0;
+  padding: 16px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   width: 100%;
-  margin-bottom: 20px;
-  height: 9%;
+  margin-bottom: 0;
 }
 
 .site-header h1 {
@@ -159,13 +174,13 @@ button:hover {
   background-color: #333;
   color: white;
   text-align: left;
-  padding: 20px 10px;
+  padding: 14px 10px;
   position: relative;
   width: 100%;
   font-size: 0.9rem;
   margin: 0;
   align-items: flex-start;
-  height: 10%;
+  flex-shrink: 0;
 }
 
 .site-footer a {
@@ -195,14 +210,23 @@ button:hover {
 @media (max-width: 768px) {
   .admin-container {
     padding: 20px;
-    width: 80%;
   }
 
-  h1 {
-    font-size: 1.5rem;
+  .site-header h1 {
+    font-size: 1.75rem;
   }
 
-  button, .logout-btn {
+  .site-header:hover h1 {
+    font-size: 1.75rem;
+  }
+
+  button {
     font-size: 0.9rem;
+  }
+}
+
+@media (max-height: 700px) {
+  .body-container {
+    align-items: flex-start;
   }
 }

@@ -28,7 +28,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Cargar empresas
   function cargarEmpresas() {
     fetch('/api/empresas', { credentials: 'include' })
-      .then(response => response.json())
+      .then(response => {
+        if (!response.ok) throw new Error('No se pudieron cargar las empresas');
+        return response.json();
+      })
       .then(data => {
         data.forEach(empresa => {
           const option = document.createElement('option');
@@ -37,7 +40,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           empresaSelect.appendChild(option);
         });
       })
-      .catch(error => console.error('Error al cargar empresas:', error));
+      .catch(error => {
+        console.error('Error al cargar empresas:', error);
+        alert(error.message);
+      });
   }
 
   cargarEmpresas();

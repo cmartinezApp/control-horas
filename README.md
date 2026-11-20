@@ -208,6 +208,19 @@ CREATE TABLE usuarios (
 );
 ```
 
+**Tabla `usuario_empresas`**
+```sql
+CREATE TABLE usuario_empresas (
+  usuario_id INTEGER,
+  empresa_id INTEGER,
+  PRIMARY KEY (usuario_id, empresa_id)
+);
+```
+
+Esta relación permite autorizar más de una empresa por usuario. Al actualizar la base
+existente, la empresa que cada usuario tenía asignada se conserva como su autorización
+inicial.
+
 **Tabla `empresas`**
 ```sql
 CREATE TABLE empresas (
@@ -250,6 +263,8 @@ CREATE TABLE horas (
 | Método | Ruta | Descripción | Autenticación |
 |--------|------|-------------|---------------|
 | GET | `/api/horas/:anio/:mes` | Obtener horas por mes/año | ✅ Sí |
+| GET | `/api/usuarios` | Listar usuarios y empresas asignadas (admin) | ✅ Admin |
+| PUT | `/api/usuarios/:id` | Actualizar usuario, empresas asignadas y contraseña opcional (admin) | ✅ Admin |
 | POST | `/api/horas` | Crear nueva entrada de horas | ✅ Sí |
 | GET | `/api/horas-libres/:empresa_id` | Obtener horas libres | ✅ Sí |
 
@@ -257,7 +272,7 @@ CREATE TABLE horas (
 
 | Método | Ruta | Descripción | Autenticación |
 |--------|------|-------------|---------------|
-| GET | `/api/empresas` | Obtener todas las empresas | ❌ No |
+| GET | `/api/empresas` | Obtener empresas autorizadas (todas para admin) | ✅ Sí |
 
 ---
 

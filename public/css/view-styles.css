@@ -98,7 +98,7 @@ canvas {
 }
 
 /* Estilos para el selector de mes y el botón */
-#mes, #filtrar {
+#mes, #anio, #empresa, #filtrar {
   padding: 8px;
   margin: 5px;
   font-size: 16px;

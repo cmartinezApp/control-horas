@@ -14,16 +14,26 @@
 
   <!-- Cuerpo de Página -->
   <div class="container">
-    <h1>Registro</h1>
+    <h1>Gestión de usuarios</h1>
+    <label for="usuario">Usuario a modificar:</label>
+    <select id="usuario">
+      <option value="">Crear un usuario nuevo</option>
+    </select>
     <form id="register-form">
       <input type="text" id="username" placeholder="Usuario" required>
+      <label for="password" id="password-label">Contraseña:</label>
       <input type="password" id="password" placeholder="Contraseña" required>
-      <select id="empresa" required>
-        <option value="">Seleccionar Empresa</option>
+      <small id="password-help" hidden>Dejá este campo vacío para conservar la contraseña actual.</small>
+      <label for="empresa">Empresas a las que tendrá acceso:</label>
+      <select id="empresa" multiple required size="5">
       </select>
-      <input type="password" id="clave-maestra" placeholder="Clave Maestra" required>
-      <button type="submit">Registrarse</button>
+      <small>Mantené Ctrl o Command para seleccionar varias empresas.</small>
+      <div id="clave-maestra-container">
+        <input type="password" id="clave-maestra" placeholder="Clave Maestra" required>
+      </div>
+      <button type="submit" id="guardar-usuario">Crear usuario</button>
     </form>
+    <a href="/admin.html">Volver a cargar horas</a>
   </div>
 
   <!-- Footer -->
